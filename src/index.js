@@ -1,25 +1,18 @@
-import dotenv from 'dotenv';
-dotenv.config();
-import Bolt from '@slack/bolt';
+require('dotenv').config();
+const Bolt = require('@slack/bolt');
 
-const app = new Bolt.App({
+const slack = new Bolt.App({
   token: process.env.SLACK_BOT_TOKEN,
   signingSecret: process.env.SLACK_SIGNING_SECRET,
 });
 
-app.message('idiot', ({ say }) => {
+slack.message('idiot', ({ say }) => {
   say('I AM IDIOT');
 });
 
-app.message('ceelo', ({ say }) => {
-  say('I AM IDIOT');
-});
+// slack.event('reaction_added', (/*{ event, context }*/) => {
+// TODO handle reactions to the initial message
+// });
 
-app.event('reaction_added', ({ event, context }) => {
-  console.log(event);
-  console.log(context);
-});
-
-console.log('⚡️ Starting Bolt app!');
-app.start(process.env.PORT || 3000);
-
+console.log('🚀 STARTING...');
+slack.start(process.env.PORT || 3000);

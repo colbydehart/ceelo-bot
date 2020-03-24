@@ -1,16 +1,13 @@
 {
   "name": "ceelo-bot",
-  "type": "module",
   "version": "1.0.0",
   "main": "src/index.js",
   "license": "MIT",
   "scripts": {
-    "start": "node src/index.js"
+    "start": "node ./src/index.js"
   },
   "dependencies": {
-    "@slack/bolt": "^1.8.0"
-  },
-  "devDependencies": {
+    "@slack/bolt": "^1.8.0",
     "dotenv": "^8.2.0"
   }
 }
