@@ -5,14 +5,19 @@
   "main": "src/index.js",
   "license": "MIT",
   "scripts": {
-    "start": "node --experimental-modules ./src/index.js"
+    "watch": "tsc -w",
+    "build": "tsc",
+    "serve": "node dist/index.js",
+    "start": "npm run build && npm run serve"
   },
   "dependencies": {
     "@slack/bolt": "^1.8.0",
     "dotenv": "^8.2.0",
-    "ioredis": "^4.16.0"
+    "mongodb": "^3.5.5",
+    "typescript": "^3.8.3"
   },
   "devDependencies": {
-    "@types/ioredis": "^4.14.9"
+    "@types/mongodb": "^3.5.4",
+    "@types/node": "^13.9.5"
   }
 }
