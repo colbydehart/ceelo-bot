@@ -15,10 +15,10 @@ slack.message('idiot', async ({ say }) => {
 });
 
 // SCORES - say the scores
-slack.message(/scores/i, async ({ say }) => {
+slack.message(/scores/i, async ({ say}) => {
   const msg = await Data.scores();
-  say(msg);
-});
+  say(msg)
+})
 
 // PLAY - start playing if there is no game.
 slack.message(/play/i, async ({ message, client, context }) => {

@@ -24,6 +24,9 @@ exports.roll = async (game) => {
   if (timesRolled >= 5 && result === MUFFINS) {
     scoreText += '\n' + 'ROLL OUT!';
   }
+  if (timesRolled >= 5 && result === MUFFINS) {
+    scoreText += '\n' + 'ROLL OUT!';
+  }
   const updatedGame = await Data.currentGame();
   const nextPlayer = updatedGame.scores.find((s) => s.score === null);
   // IDK FIXME
