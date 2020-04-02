@@ -111,7 +111,7 @@ const scoreToText = (score) => {
     case 4:
     case 5:
     case 6:
-      return `DOUBLE ${score}s`;
+      return score;
     case 11:
     case 22:
     case 33:
@@ -120,13 +120,13 @@ const scoreToText = (score) => {
     case 66:
       return `TRIPLE ${score % 10}s`;
     case 456:
-      return 'FOUR FIVE SIX'
+      return 'FOUR FIVE SIX';
     case 0:
-      return 'MUFFINS'
+      return 'MUFFINS';
     case -123:
-      return 'ERROR: HOW U WIN WITH 123?'
+      return 'ERROR: HOW U WIN WITH 123?';
   }
-}
+};
 
 const rollThree = () => [dieRoll(), dieRoll(), dieRoll()].sort();
 

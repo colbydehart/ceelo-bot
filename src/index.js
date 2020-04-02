@@ -15,10 +15,10 @@ slack.message('idiot', async ({ say }) => {
 });
 
 // SCORES - say the scores
-slack.message(/scores/i, async ({ say}) => {
+slack.message(/scores/i, async ({ say }) => {
   const msg = await Data.scores();
-  say(msg)
-})
+  say(msg);
+});
 
 // PLAY - start playing if there is no game.
 slack.message(/play/i, async ({ message, client, context }) => {
@@ -27,7 +27,8 @@ slack.message(/play/i, async ({ message, client, context }) => {
     const { ok, ts } = await client.chat.postMessage({
       token: context.botToken,
       channel: message.channel,
-      text: 'LETS PLAY CEELO. U REACT TO THIS WITH EMOJI TO PLAY. U TYPE `roll` 2 ROLL THE DICE',
+      text:
+        'LETS PLAY CEELO. U REACT TO THIS WITH EMOJI TO PLAY. U TYPE `roll` 2 ROLL THE DICE',
     });
     if (ok) {
       await Data.getPlayerBySlackId(message.user);
