@@ -59,3 +59,14 @@ exports.getPlayerBySlackId = async (slackId) => {
     return await newPlayer(slackId);
   }
 };
+
+exports.scores = async () => {
+  const  players = await Player.find({}).exec()
+  const scoreText =
+    players.map(player => `<@${player.slackId}>: ${player.total}`).join('\n')
+  return `
+  **SCORES**
+  ----------- 
+  ${scoreText}
+  `
+}

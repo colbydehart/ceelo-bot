@@ -2,6 +2,7 @@
 require('dotenv').config();
 const { App } = require('@slack/bolt');
 const Data = require('./data');
+const Ceelo = require('./ceelo');
 
 const slack = new App({
   token: process.env.SLACK_BOT_TOKEN,
@@ -13,14 +14,20 @@ slack.message('idiot', async ({ say }) => {
   say('I AM IDIOT');
 });
 
+// SCORES - say the scores
+slack.message(/scores/i, async ({ say}) => {
+  const msg = await Data.scores();
+  say(msg)
+})
+
 // PLAY - start playing if there is no game.
-slack.message('play', async ({ message, client, context }) => {
+slack.message(/play/i, async ({ message, client, context }) => {
   const game = await Data.currentGame();
   if (!game.created) {
     const { ok, ts } = await client.chat.postMessage({
       token: context.botToken,
       channel: message.channel,
-      text: 'LETS PLAY CEELO. U REACT TO THIS WITH EMOJI TO PLAY',
+      text: 'LETS PLAY CEELO. U REACT TO THIS WITH EMOJI TO PLAY. U TYPE `roll` 2 ROLL THE DICE',
     });
     if (ok) {
       await Data.getPlayerBySlackId(message.user);
@@ -33,23 +40,24 @@ slack.message('play', async ({ message, client, context }) => {
 });
 
 // ROLL - Roll the dice, start the game if the game isn't started
-slack.message('roll', async ({ message, client }) => {
+slack.message(/roll/i, async ({ message, client, context }) => {
   const game = await Data.currentGame();
-  const nextScore = game.scores[0];
+  const nextScore = game.scores.find((s) => s.score === null);
   if (message.user !== nextScore.playerSlackId) return;
   if (!game.started) {
-    game.scores.forEach((s) => {
-      const player = Data.getPlayerBySlackId(s.playerSlackId);
-      // take a point from everyone
-      if (player && player.save) {
-        player.total -= 1;
-        player.save();
-      }
-    });
+    await Promise.all(
+      game.scores.map(async (s) => {
+        const player = await Data.getPlayerBySlackId(s.playerSlackId);
+        // take a point from everyone
+        console.log(`taking away 1 point from ${message.user}`);
+        player.total = player.total - 1;
+        await player.save();
+      })
+    );
     game.started = true;
     await game.save();
   }
-  const resultText = ceelo.roll();
+  const resultText = await Ceelo.roll(game);
   client.chat.postMessage({
     token: context.botToken,
     channel: message.channel,
