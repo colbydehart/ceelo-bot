@@ -10,7 +10,7 @@ exports.roll = async (game) => {
   let timesRolled = 0;
   let scoreText = '';
   let result = MUFFINS;
-  while (timesRolled < 5 && result === MUFFINS) {
+  do {
     timesRolled += 1;
     const roll = rollThree();
     result = await scoreRolls(score, roll);
@@ -20,7 +20,7 @@ exports.roll = async (game) => {
     if (result === WIN_456) {
       return await finishGame(game, scoreText);
     }
-  }
+  } while (timesRolled < 5 && result === MUFFINS);
   if (timesRolled >= 5 && result === MUFFINS) {
     scoreText += '\n' + 'ROLL OUT!';
   }
@@ -54,6 +54,7 @@ const finishGame = async (game, scoreText) => {
   return `
   ${scoreText}
   PLAYER <@${topScore.playerSlackId}> WON WITH ${scoreToText(topScore.score)}
+  U TYPE \`play\` 2 START NEW GAME
   `;
 };
 

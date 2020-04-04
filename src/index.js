@@ -28,7 +28,7 @@ slack.message(/play/i, async ({ message, client, context }) => {
       token: context.botToken,
       channel: message.channel,
       text:
-        'LETS PLAY CEELO. U REACT TO THIS WITH EMOJI TO PLAY. U TYPE `roll` 2 ROLL THE DICE',
+        '@channel LETS PLAY CEELO. U REACT TO THIS WITH EMOJI TO PLAY. U TYPE `roll` 2 ROLL THE DICE',
     });
     if (ok) {
       await Data.getPlayerBySlackId(message.user);
@@ -36,6 +36,12 @@ slack.message(/play/i, async ({ message, client, context }) => {
       game.messageTimestamp = ts;
       game.created = true;
       await game.save();
+      // Set game open after a minute
+      setTimeout(async () => {
+        const game = await Data.currentGame();
+        game.open = true;
+        await game.save();
+      }, 1000 * 60);
     }
   }
 });
@@ -44,26 +50,32 @@ slack.message(/play/i, async ({ message, client, context }) => {
 slack.message(/roll/i, async ({ message, client, context }) => {
   const game = await Data.currentGame();
   const nextScore = game.scores.find((s) => s.score === null);
-  if (message.user !== nextScore.playerSlackId) return;
+  if (message.user !== nextScore.playerSlackId && !game.open) return;
+  game.open = false;
+  await game.save();
   if (!game.started) {
-    await Promise.all(
-      game.scores.map(async (s) => {
-        const player = await Data.getPlayerBySlackId(s.playerSlackId);
-        // take a point from everyone
-        console.log(`taking away 1 point from ${message.user}`);
-        player.total = player.total - 1;
-        await player.save();
-      })
-    );
+    game.scores.forEach(async (s) => {
+      const player = await Data.getPlayerBySlackId(s.playerSlackId);
+      // take a point from everyone
+      console.log(`taking away 1 point from ${message.user}`);
+      player.total = player.total - 1;
+      await player.save();
+    });
     game.started = true;
     await game.save();
   }
   const resultText = await Ceelo.roll(game);
-  client.chat.postMessage({
+  await client.chat.postMessage({
     token: context.botToken,
     channel: message.channel,
     text: resultText,
   });
+
+  setTimeout(async () => {
+    const game = await Data.currentGame();
+    game.open = true;
+    await game.save();
+  }, 1000 * 60);
 });
 
 // REACTION ADDED - listen for reactions for the current game
@@ -71,6 +83,7 @@ slack.event('reaction_added', async ({ event }) => {
   const { user, item } = event;
   const game = await Data.currentGame();
   if (
+    !game.started &&
     item.ts === game.messageTimestamp &&
     !game.scores.some((score) => score.playerSlackId === user)
   ) {
@@ -86,6 +99,7 @@ slack.event('reaction_removed', async ({ event }) => {
   const { user, item } = event;
   const game = await Data.currentGame();
   if (
+    !game.started &&
     item.ts === game.messageTimestamp &&
     game.scores.some((score) => score.playerSlackId === user)
   ) {

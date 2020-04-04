@@ -19,6 +19,8 @@ const gameSchema = new Schema(
     scores: [{ playerSlackId: String, score: Number }],
     created: { type: Types.Boolean, default: false },
     started: { type: Types.Boolean, default: false },
+    // Whether anyone can roll the dice for a player
+    open: { type: Types.Boolean, default: false },
     finished: { type: Types.Boolean, default: false },
     messageTimestamp: String,
   },
@@ -61,12 +63,13 @@ exports.getPlayerBySlackId = async (slackId) => {
 };
 
 exports.scores = async () => {
-  const  players = await Player.find({}).exec()
-  const scoreText =
-    players.map(player => `<@${player.slackId}>: ${player.total}`).join('\n')
+  const players = await Player.find({}).exec();
+  const scoreText = players
+    .map((player) => `<@${player.slackId}>: ${player.total}`)
+    .join('\n');
   return `
   **SCORES**
   ----------- 
   ${scoreText}
-  `
-}
+  `;
+};
