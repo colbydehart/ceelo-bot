@@ -23,6 +23,7 @@ const gameSchema = new Schema(
     open: { type: Types.Boolean, default: false },
     finished: { type: Types.Boolean, default: false },
     messageTimestamp: String,
+    stakes: {type: Number, default: 0},
   },
   { timestamps: true }
 );
@@ -35,16 +36,27 @@ const newGame = async () => {
 };
 
 exports.currentGame = async () => {
-  try {
-    const game = await Game.findOne({ finished: false })
-      .sort('createdAt')
-      .exec();
-    if (!game) return await newGame();
-    return game;
-  } catch (e) {
-    return await newGame();
-  }
+  const game = await Game.findOne({ finished: false })
+    .sort('createdAt')
+    .exec();
+  if (!game) return await newGame();
+  return game;
 };
+
+// Takes away 1 point from each player in the game and sets the game as started.
+exports.startGame = (game) => {
+  game.scores.forEach(async (s) => {
+    const player = await Data.getPlayerBySlackId(s.playerSlackId);
+    // take a point from everyone
+    console.log(`taking away 1 point from ${message.user}`);
+    player.total = player.total - 1;
+    await player.save();
+  });
+
+  game.stakes += game.scores.length
+  game.started = true;
+  return await game.save()
+}
 
 const newPlayer = async (slackId) => {
   const player = new Player({ slackId });
@@ -53,13 +65,9 @@ const newPlayer = async (slackId) => {
 };
 
 exports.getPlayerBySlackId = async (slackId) => {
-  try {
-    const player = await Player.findOne({ slackId }).exec();
-    if (!player) return await newPlayer(slackId);
-    return player;
-  } catch (e) {
-    return await newPlayer(slackId);
-  }
+  const player = await Player.findOne({ slackId }).exec();
+  if (!player) return await newPlayer(slackId);
+  return player;
 };
 
 exports.scores = async () => {

@@ -28,7 +28,7 @@ slack.message(/play/i, async ({ message, client, context }) => {
       token: context.botToken,
       channel: message.channel,
       text:
-        '@channel LETS PLAY CEELO. U REACT TO THIS WITH EMOJI TO PLAY. U TYPE `roll` 2 ROLL THE DICE',
+        'LETS PLAY CEELO. U REACT TO THIS WITH EMOJI TO PLAY. U TYPE `roll` 2 ROLL DICE',
     });
     if (ok) {
       await Data.getPlayerBySlackId(message.user);
@@ -50,20 +50,16 @@ slack.message(/play/i, async ({ message, client, context }) => {
 slack.message(/roll/i, async ({ message, client, context }) => {
   const game = await Data.currentGame();
   const nextScore = game.scores.find((s) => s.score === null);
+
   if (message.user !== nextScore.playerSlackId && !game.open) return;
   game.open = false;
-  await game.save();
+
+  // Take points from players and set stakes if game not started.
   if (!game.started) {
-    game.scores.forEach(async (s) => {
-      const player = await Data.getPlayerBySlackId(s.playerSlackId);
-      // take a point from everyone
-      console.log(`taking away 1 point from ${message.user}`);
-      player.total = player.total - 1;
-      await player.save();
-    });
-    game.started = true;
-    await game.save();
+    await Data.startGame(game)
   }
+  await game.save();
+
   const resultText = await Ceelo.roll(game);
   await client.chat.postMessage({
     token: context.botToken,

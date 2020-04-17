@@ -1,4 +1,5 @@
 const Data = require('./data');
+const R = require('ramda')
 
 const WIN_456 = 'U ROLLED 456! U WIN!';
 const MUFFINS = 'U GOT MUFFINS!';
@@ -33,6 +34,7 @@ exports.roll = async (game) => {
   if (!nextPlayer || nextPlayer.slackId === score.playerSlackId) {
     return await finishGame(updatedGame, scoreText);
   }
+
   return `
   ${scoreText}
   PLAYER <@${nextPlayer.playerSlackId}> UP NEXT
@@ -43,14 +45,17 @@ const finishGame = async (game, scoreText) => {
   game.finished = true;
   await game.save();
   // Get the top score by the numeric score.
-  // possible scores: {456,66..11,6..1,0,-123}
-  let topScore = game.scores.reduce((a, b) => (a.score > b.score ? a : b));
+  const topScore = game.scores.reduce((a, b) => (a.score > b.score ? a : b));
+  const winningScores = game.scores.filter(s => s.score >= topScore.score)
+  if (winningScores.length > 1) {
+    return push(game)
+  }
   const player = await Data.getPlayerBySlackId(topScore.playerSlackId);
   // Give the player a point for every player that put in a point
   console.log(
-    `giving ${game.scores.length} points to ${topScore.playerSlackId}`
+    `giving ${game.stakes} points to ${topScore.playerSlackId}`
   );
-  player.total += game.scores.length;
+  player.total += game.stakes;
   await player.save();
 
   // return the person who won and with what.
@@ -60,6 +65,18 @@ const finishGame = async (game, scoreText) => {
   U TYPE \`play\` 2 START NEW GAME
   `;
 };
+
+const push = async (game) => {
+  const topScore = game.scores.reduce((a, b) => (a.score > b.score ? a : b));
+  const winningScores = game.scores.filter(s => s.score >= topScore.score)
+  game.started = false;
+  game.scores = winningScores.map(s => ({...s, score: 0}))
+
+  return `
+  PUSH!!!
+  PLAYERS ${game.scores.map(s => '<@' + s.playerSlackId + '>').join(', ')} ARE UP NOW
+  U TYPE \`roll\` 2 ROLL.`
+}
 
 const rollToText = (die) =>
   die
