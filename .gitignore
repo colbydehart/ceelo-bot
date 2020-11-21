@@ -25,4 +25,9 @@ ceelo-*.tar
 
 # Temporary files for e.g. tests
 /tmp
+
+# Personal env file
 .env
+
+# Personal ignore file
+.ignore

@@ -1,4 +1,4 @@
-defmodule Ceelo.SlackAgent do
+defmodule Ceelo.SlackServer do
   use GenServer
 
   @doc false

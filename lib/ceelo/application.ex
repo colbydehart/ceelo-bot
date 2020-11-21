@@ -10,7 +10,7 @@ defmodule Ceelo.Application do
     children = [
       # Starts a worker by calling: Ceelo.Worker.start_link(arg)
       # {Ceelo.Worker, arg}
-      Ceelo.SlackAgent
+      Ceelo.SlackServer
     ]
 
     # See https://hexdocs.pm/elixir/Supervisor.html
