@@ -1,21 +1,7 @@
-# Ceelo
+# CEELOBOT U FOOL
 
-**TODO: Add description**
+### U ROLL DA DICE U PAY DA PRICE
 
-## Installation
-
-If [available in Hex](https://hex.pm/docs/publish), the package can be installed
-by adding `ceelo` to your list of dependencies in `mix.exs`:
-
-```elixir
-def deps do
-  [
-    {:ceelo, "~> 0.1.0"}
-  ]
-end
-```
-
-Documentation can be generated with [ExDoc](https://github.com/elixir-lang/ex_doc)
-and published on [HexDocs](https://hexdocs.pm). Once published, the docs can
-be found at [https://hexdocs.pm/ceelo](https://hexdocs.pm/ceelo).
-
+# SETUP
+- U ADD ENV VARS. LOOK AT CONFIG U GOOF
+- U RUN `mix run --no-halt`
