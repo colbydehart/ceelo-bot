@@ -67,6 +67,7 @@ defmodule Ceelo.GameState do
         end
 
       Logger.info("Next player is #{next_player}")
+
       %{state | game: game, current_player: next_player}
     end)
   end
