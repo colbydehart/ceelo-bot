@@ -19,6 +19,10 @@ defmodule Ceelo.Router do
     options
   end
 
+  get "/" do
+    send_resp(conn, 200, "")
+  end
+
   post "/slack/events" do
     IO.inspect(conn)
 
