@@ -58,15 +58,15 @@ defmodule Ceelo.GameState do
           turn -> turn
         end)
 
-      current_player =
+      next_player =
         game
-        |> Enum.find(&(not is_nil(&1.score) and &1.player_id !== current_player))
+        |> Enum.find(&(&1.score !== nil))
         |> case do
           nil -> nil
           %{player_id: player_id} -> player_id
         end
 
-      %{state | game: game, current_player: current_player}
+      %{state | game: game, current_player: next_player}
     end)
   end
 
