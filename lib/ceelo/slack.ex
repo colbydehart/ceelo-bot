@@ -16,7 +16,8 @@ defmodule Ceelo.Slack do
           text: txt
         }),
         [
-          {"content-type", "application/json"}
+          {"content-type", "application/json"},
+          {"authorization", "Bearer #{@token}"}
         ]
       )
 
