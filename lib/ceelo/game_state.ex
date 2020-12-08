@@ -1,16 +1,8 @@
 defmodule Ceelo.GameState do
   use Agent
   alias Ceelo.GameState
+  alias Ceelo.Gameplay
   require Logger
-
-  @dice [1, 2, 3, 4, 5, 6]
-
-  @type dice_roll ::
-          :one_two_three
-          | :four_five_six
-          | :muffins
-          | {:double, integer(), integer()}
-          | {:triple, integer()}
 
   @doc false
   def start_link(_) do
@@ -32,67 +24,51 @@ defmodule Ceelo.GameState do
 
   def created?(), do: Agent.get(GameState, &(&1.game != nil or &1.player_queue != nil))
 
-  def game_over?(), do: Agent.get(GameState, fn 
-    %{game: nil} -> false
-    %{game: game} -> Enum.any?(game, &(&1.score == :four_five_six)) or Enum.all?(game, &(&1.score != nil))
-  end)
+  def game_over?(),
+    do:
+      Agent.get(GameState, fn
+        %{game: nil} ->
+          false
 
-  def get_winner(), do: Agent.get(GameState, fn 
-    %{game: nil} -> nil
-    %{game: game} ->
-      game
-      |> Enum.sort_by(&score_to_number(&1.score))
-      |> Enum.reverse()
-      |> List.first()
-  end)
+        %{game: game} ->
+          Enum.any?(game, fn turn -> turn.score == :four_five_six end) or
+            Enum.all?(game, fn turn -> not is_nil(turn.score) end)
+      end)
 
-  def score_to_number(:muffins), do: -1
-  def score_to_number(:one_two_three), do: -100
-  def score_to_number(:four_five_six), do: 100
-  def score_to_number({:double, x, y}), do: x
-  def score_to_number({:triple, x}), do: x * 10
+  def get_winners() do
+    Agent.get(GameState, fn
+      %{game: nil} ->
+        nil
 
-  def score_to_text(:muffins), do: "MUFFINS"
-  def score_to_text(:one_two_three), do: "ONE TWO THREE U LOSE :("
-  def score_to_text(:four_five_six), do: "FOUR FIVE SIX"
-  def score_to_text({:double, x, y}), do: "DOUBLE #{y}s WITH A #{x}"
-  def score_to_text({:triple, x}), do: "TRIPLE #{x}s"
-
-  def register_score(score) do
-    Agent.update(GameState, fn %{current_player: current_player} = state ->
-      %{
-        state
-        # Update the current player's score
-        | game:
-            state.game
-            |> Enum.map(fn 
-              turn = %{player_id: ^current_player} -> %{turn| score: score }
-              turn -> turn
-            end),
-          # Set the current player to the next player without a score
-        current_player: state.game
-          |> Enum.find(&(&1.score == nil && &1.player_id != current_player))
-          |> case do
-            nil -> nil
-            %{player_id: player_id} -> player_id
-          end
-      }
+      %{game: game} ->
+        game
+        |> Enum.sort_by(&Gameplay.roll_to_int(&1.score))
+        |> Enum.reverse()
+        |> Enum.chunk_by(& &1)
+        |> List.first()
     end)
   end
 
-  def roll_dice(_) do
-    [Enum.random(@dice), Enum.random(@dice), Enum.random(@dice)]
-    |> Enum.sort()
-    |> case do
-      [1, 2, 3] -> :one_two_three
-      [4, 5, 6] -> :four_five_six
-      [x, x, y] -> {:double, y, x}
-      [y, x, x] -> {:double, y, x}
-      [x, x, x] -> {:triple, x}
-      _ -> :muffins
-    end
-  end
+  def register_score(score) do
+    Agent.update(GameState, fn %{current_player: current_player} = state ->
+      game =
+        state.game
+        |> Enum.map(fn
+          turn = %{player_id: ^current_player} -> %{turn | score: score}
+          turn -> turn
+        end)
 
+      current_player =
+        game
+        |> Enum.find(&(not is_nil(&1.score) and &1.player_id !== current_player))
+        |> case do
+          nil -> nil
+          %{player_id: player_id} -> player_id
+        end
+
+      %{state | game: game, current_player: current_player}
+    end)
+  end
 
   # Public API
   # Create a new game, get a new player queue to be instantiated into a new game
@@ -112,54 +88,79 @@ defmodule Ceelo.GameState do
   # Begin a game
   def begin_game() do
     Agent.update(GameState, fn state ->
-      %{ state | 
-        player_queue: nil,
-        game: game_from_queue(state.player_queue)      }
+      %{state | player_queue: nil, game: game_from_queue(state.player_queue)}
     end)
   end
 
   # Roll the dice, begins game if not yet started.
-  def roll(user_id) do
-    IO.inspect(Agent.get(GameState, & &1.game))
+  def roll() do
     if Agent.get(GameState, & &1.game) == nil do
       Logger.info("Beginning the game")
       begin_game()
     end
 
-    rolls =  Enum.map(0..4, &roll_dice/1)
+    {score, rolls} = Gameplay.get_rolls()
 
-    score = rolls
-            |> Enum.find(:muffins, & &1 != :muffins)
-    {rolls, rest} = rolls
-            |> Enum.split(Enum.find_index(rolls, & &1 == score) + 1)
-    Logger.info("score: #{score_to_text(score)}")
+    Logger.info("score: #{Gameplay.roll_to_str(score)}")
     :ok = register_score(score)
 
-    roll_text =  
-      rolls
-      |> Enum.map(&score_to_text/1)
-      |> Enum.join("\n")
+    roll_text =
+      case rolls do
+        [m, m, m, m, m] -> "ROLL OUT!!!!"
+        rolls -> rolls |> Enum.map(&Gameplay.roll_to_str/1) |> Enum.join("\n")
+      end
+
     if game_over?() do
-      roll_text <> end_game() 
+      roll_text <> end_game()
     else
       roll_text <> "\nUP NEXT IS <@#{current_player()}>"
     end
   end
 
   def end_game() do
-    Logger.info("game over")
-    winner = get_winner()
-    Logger.info("Winner:")
-    Logger.info(winner.player_id)
-    Agent.update(GameState, fn state -> 
-      %{state | current_player: nil, game: nil, message_timestamp: nil, player_queue: nil}
-    end)
+    get_winners()
+    |> case do
+      [winner] ->
+        Logger.info("game over")
+        Logger.info("Winner:")
+        Logger.info(winner.player_id)
 
-    "\nGAME IS OVER: <@#{winner.player_id}> is the winner! with #{score_to_text(winner.score)}"
+        Agent.update(GameState, fn state ->
+          %{state | current_player: nil, game: nil, message_timestamp: nil, player_queue: nil}
+        end)
+
+        "\nGAME IS OVER: <@#{winner.player_id}> is the winner! with #{
+          Gameplay.roll_to_str(winner.score)
+        }"
+
+      winners ->
+        Logger.info("push")
+
+        Agent.update(GameState, fn state ->
+          %{
+            state
+            | current_player: winners[0].player_id,
+              # reset the score to nil with the winners as the players of the
+              # new game
+              game:
+                winners
+                |> Enum.map(&Map.put(&1, :score, nil)),
+              message_timestamp: nil,
+              player_queue: nil
+          }
+        end)
+
+        """
+        WE GOT OURSELVES A PUSH!
+        #{winners |> Enum.map(&"<@#{&1.player_id}>") |> Enum.join(" , ")}
+        KEEP GOING!
+        """
+    end
   end
 
   def join(user_id) do
     Logger.info("Player #{user_id} joining")
+
     Agent.update(GameState, fn state ->
       %{state | player_queue: MapSet.put(state.player_queue, user_id)}
     end)
@@ -167,18 +168,17 @@ defmodule Ceelo.GameState do
 
   def leave(user_id) do
     Logger.info("Player #{user_id} leaving")
+
     Agent.update(GameState, fn state ->
       %{state | player_queue: MapSet.delete(state.player_queue, user_id)}
     end)
   end
 
-
   # Utility Functions
-  
+
   def game_from_queue(player_queue) do
     player_queue
     |> MapSet.to_list()
     |> Enum.map(&%{player_id: &1, score: nil})
   end
 end
-

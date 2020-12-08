@@ -46,7 +46,7 @@ defmodule Ceelo.Router do
         Slack.say("I AM IDIOT", event["channel"])
 
       event["text"] =~ ~r/roll/i && event["user"] == GameState.current_player() ->
-        GameState.roll(event["user"])
+        GameState.roll()
         |> Slack.say(event["channel"])
 
       event["text"] =~ ~r/play/ ->
