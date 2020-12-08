@@ -60,12 +60,13 @@ defmodule Ceelo.GameState do
 
       next_player =
         game
-        |> Enum.find(&(&1.score !== nil))
+        |> Enum.find(&(is_nil(&1.score) and &1.player_id !== current_player))
         |> case do
           nil -> nil
           %{player_id: player_id} -> player_id
         end
 
+      Logger.info("Next player is #{next_player}")
       %{state | game: game, current_player: next_player}
     end)
   end

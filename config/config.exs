@@ -6,7 +6,4 @@ config :ceelo,
   port: String.to_integer(System.get_env("PORT", "3000"))
 
 config :logger,
-  compile_time_purge_matching: [
-    [application: :cowboy],
-    [level_lower_than: :info]
-  ]
+  level: :info
