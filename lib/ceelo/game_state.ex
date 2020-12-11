@@ -176,8 +176,6 @@ defmodule Ceelo.GameState do
     end)
   end
 
-  # Utility Functions
-
   def game_from_queue(player_queue) do
     player_queue
     |> MapSet.to_list()
